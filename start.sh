@@ -56,6 +56,7 @@ echo -e "${COLOR_SUMMARY}Configuring docker-compose.yml file${COLOR_END}"
 sed "s/GATEWAY_EUI: \".*\"/GATEWAY_EUI: \"$GATEWAY_EUI\"/g" -i docker-compose.yml
 sed "s/TTS_DOMAIN: .*/TTS_DOMAIN: $UDP_SERVER_HOST/g" -i docker-compose.yml
 sed "s/SERVER_HOST: .*/SERVER_HOST: $UDP_SERVER_HOST/g" -i docker-compose.yml
+sed "s#address: .*#address: ${UDP_SERVER_HOST}#g" -i BACpypes.ini
 
 echo -e "${COLOR_SUMMARY}Getting container images and services ready...${COLOR_END}"
 docker compose up -d
