@@ -1,58 +1,56 @@
-# Standalone LoraWAN Gateway 
+# Standalone LoraWAN-in-BACnet-out Gateway
 
 [TOC]
 
-
 ## 1. Introduction
 
-This guide explains how the Standalone LoraWAN Gateway works. We will use MQTT to subscribe uplink messages from TTN stack. Once the messages from the registered devices arrive to the LNS, they are being published as MQTT messages so we can process them from Node-RED. The environmental data is stored in the influxdb databases, and then visualized through Grafana.
-
+This guide explains how the Standalone LoraWAN-in-BACnet-out Gateway works. We will use MQTT to subscribe uplink messages from TTN stack. Once the messages from the registered devices arrive to the LNS, they are being published as MQTT messages so we can process them, and send the messages out via BACnet IP.
 
 ### 1.1. Docker compose
 
-We have 7 services defined in the [docker compose](./docker-compose.yml) file: 
+We have 4 services defined in the [docker compose](./docker-compose.yml) file:
 
 - `udp-packet-forwarder` interacts with the LoRa chip to receive and transfer LoRa packets
 - `stack` is a TTN stack service which depends on `redis` and `postgres` service. This service enables connectivity, management, and monitoring of devices, gateways and end-user applications
 - `redis` is the main data store for the Network Server, Application Server and Join Server, and it is also used by Identity Server and event system.
-- `postgres` is another databased used by `stack` 
-- `node-red` service contains a default flow which subscribe uplink data from TTN stack by MQTT protocol and stores the data into a `influxdb` database, whose name is **sensors**; 
-- `influxdb` service provide a database which `node-red` will use
-- `grafana` service uses the influxdb as a data resource, and visualize the data.
-
+- `postgres` is another databased used by `stack`
 
 ### 1.2. Run services
 
-The included `run.sh` script takes care of tweaking the `dcoker-compose.yml` file to change the IP of the host and bring up all the service. 
+The default RAKPiOS user name is **rak**, and the password is **rakpios**. At first login, you will be forced to change the default password. For example, if you log in via SSH for the first time, you will have to set a new one by entering the default one and a new one after.
 
+After you loged in, enter the demo directory. You will find a executable script called`start.sh` . The included `start.sh` script takes care of tweaking the `dcoker-compose.yml` file to change the IP of the host and bring up all the service.
+
+```bash
+$ ./start.sh
+Server Host is configured to:  10.2.13.254
+Configuring docker-compose.yml file
+Getting container images and services ready...
+[+] Running 9/9
+ ⠿ Network lorawan-in-mqtt-out_bridge       Created                              
+ ⠿ Volume "lorawan-in-mqtt-out_redis"       Created                              
+ ⠿ Volume "lorawan-in-mqtt-out_stack-blob"  Created                              
+ ⠿ Volume "lorawan-in-mqtt-out_stack-data"  Created                              
+ ⠿ Volume "lorawan-in-mqtt-out_postgres"    Created                              
+ ⠿ Container redis                          Started                              
+ ⠿ Container postgres                       Started                              
+ ⠿ Container udp-packet-forwarder           Started                              
+ ⠿ Container stack                          Started                              
+
+---------------------------------------------------------------------
+Gateway EUI  : e45f01FFFE51b75d
+Stack URL    : https://10.2.13.254/       (admin/changeme)
+The next step is to run ./BACnet-out.py
+---------------------------------------------------------------------
 ```
-$ ./run.sh
 
-```
+After running it wait <mark>a few seconds</mark> for the Stack web UI to become alive and click on the provided link to access the web UI. The default User ID and Password is `admin` and `changeme`.
 
-After running it wait a few seconds for the Stack web UI to become alive and click on the provided link to access the web UI. The default User ID and Password is `admin` and `changeme`.
+![image20220617153554724](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\image-20220617153554724.png?msec=1669027528516)
 
-![image-20220617153554724](assets/image-20220617153554724.png)
-
-After you login, you need to create your a gateway first using the GATEWAY_EUI provided by the `run.sh` script, see the `2.1 Create Gateway` section below.
-
-Navigate to the web-interface of `Node-RED` (use the link provided by the `run.sh` script) and you should be able to see the default flow. It's not ready to work for now, we will create an application in TTS first, and then come back and fill out some important information to make it work.
-
-![image-20220617153722788](assets/image-20220617153722788.png)
-
-Open `grafana` (use the link provided by the `run.sh` script). The default Username and Password is `admin` and `changeme`. When loged in, there will be a default data resource. 
-
-![image-20220617153926773](assets/image-20220617153926773.png)
-
-![image-20220617154113588](assets/image-20220617154113588.png)
-
-As a side note, we can also access `influxdb` container with the following commands.  The default username and password for the user in the influxdb container are `admin` and `changeme`. Then we will found there is a `sensors` databases.
-
-![image-20220617155242042](assets/image-20220617155242042.png) 
-
+After you login, you need to create your a gateway first using the **GATEWAY_EUI** provided by the `start.sh` script, see the `2.1 Create Gateway` section below.
 
 ## 2. Preparation
-
 
 ### 2.1 Create gateway
 
@@ -62,105 +60,72 @@ You need to add your gateway to TTS first. Go to the **Gateway** configuration p
 docker exec -it udp-packet-forwarder ./get_eui.sh
 ```
 
-The gateway server address is the one you defined in the docker compose file. Make sure you choose the right frequency plan.
+or you can copy it from the the configuration information generated by the `./start.sh `script (as shown below). The gateway server address is the one you defined when you run the `./start.sh` script. And make sure you choose the right frequency plan.
 
-![image-20220623091446030](assets/image-20220623091446030.png)
+![image20220623091446030](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\Snipaste_2022-11-21_18-36-48.png?msec=1669027528482)
+
+![image20220623091446030](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\image-20220623091446030.png?msec=1669027528486)
 
 after the gateway is created in TTS, you should be able to see the gateway is online in the gateway detail page:
 
-![gateway is online](assets/gateway-online.png)
-
+![gateway is online](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\gateway-online.png?msec=1669027528486)
 
 ### 2.2 Create application
 
-Now, as we mentioned above, we need to create an application in TTS. 
+Now, as we mentioned above, we need to create an application in TTS.
 
-![image-20220617155857075](assets/image-20220617155857075.png)
+![image20220617155857075](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\image-20220617155857075.png?msec=1669027528482)
 
-![image-20220617155946127](assets/image-20220617155946127.png)
+![image20220617155946127](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\image-20220617155946127.png?msec=1669027528487)
 
 Select `Write downlink application traffic` and `Read application traffic (uplink and downlink)`at least. The two rights is needed by MQTT.
 
-![image-20220617160035024](assets/image-20220617160035024.png)
+![image20220617160035024](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\image-20220617160035024.png?msec=1669027528490)
 
 Copy the API key, we will use it on NodeRED flow. Please note that you must copy the key and store it somewhere safe. If you forget to save it, you won't be able to see it again, unless you create a new API keys and copy it.
 
-![image-20220617160317654](assets/image-20220617160317654.png)
-
+![image20220617160317654](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\image-20220617160317654.png?msec=1669027528489)
 
 ### 2.3 Prepare end device
 
 Now, the TTS side's configuration is about to finish, we need to add end-devices to the application so that we can start to receive uplink data sent by the end-devices on the gateway. But even before that, we need prepare the end device. The end device we used is a WisBlock kit with the RAK1901 sensor that reports temperature and humidity. You can find more details in RAKwireless's [official documentation](https://docs.rakwireless.com/Product-Categories/WisBlock/RAK1901/Quickstart/#software-configuration-and-example). The Arduino code [rak1901.ino](./rak1901/rak1901.ino) is provided, you can copy paste the code, and then upload to the board. Make sure to change the device EUI, the App EUI, and the App key.
 
-![Arduino code](assets/arduino-code.png)
+![Arduino code](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\arduino-code.png?msec=1669027528482)
 
 Now we need to go back to the TTS, under the application page, add your first end-device:
 
-![add end-device](assets/add-end-device.png)
+![add enddevice](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\add-end-device.png?msec=1669027528483)
 
 switch to manually mode, and then enter the following higlighted section, make sure the DevEUI, AppEUI, AppKey match what you defined in the Arduino code:
 
-![register end-device](assets/register-end-device.png)
+![register enddevice](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\register-end-device.png?msec=1669027528483)
 
 After the end-device is registered, you should be able to see the end-device is online, and also the uplink data sent from the end-device:
 
-![end-device's live data](assets/end-device-live-data.png)
+![enddevice's live data](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\end-device-live-data.png?msec=1669027528502)
 
 to make use of the CayenneLPP, you need to go to the end-device's page, and then in the **Payload formatters** page, switch the default ulplink formatter type to CayenneLPP:
 
-![switch to cayenneLPP](assets/cayenneLPP.png)
+![switch to cayenneLPP](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\cayenneLPP.png?msec=1669027528483)
 
 now you should be able to see the converted live-data:
 
-![converted live data](assets/live-data.png)
+![converted live data](file://C:\Users\Sheng\Documents\GitHub\lorawan-in-bacnet-out\assets\live-data.png?msec=1669027528488)
 
+## 3. Create a BACnet application
 
-## 3. Modify NodeRED flow
+We create a python demo script that can read the sensor data from MQTT broker and then send it out via BACnet. To do this, you only need to run the following command in the demo directory.
 
+```
+rak@rakpios:lorawan-in-bacnet-out $ ./BACnet-out.py 
+Connected to MQTT Broker!
+A sample BACnet application is created...
+It will read temperature inputs from LoRaWAN nodes via MQTT, and then send it out via BACnet IP...
+25.5
+25.4
+26.2
+```
 
-### 3.1 Modify mqtt-broker node
-
-Open `mqtt-broker` node and paste the API keys we saved before to the **Password**. The Username is the id of application we created before in TTS's application page.
-
-![image-20220617160756156](assets/image-20220617160756156.png)
-
-
-### 3.2 Modify InfluxDB node and Deploy
-
-Open `influxdb` node and modify Username and Password.  If username is `admin` and Pasword is `changeme`, you  needn't to change it. 
-
-![image-20220617161244341](assets/image-20220617161244341.png)
-
-
-### 3.3 Modify MQTT subscribe topic
-
-The format of uplink data of ttn stack is `v3/{application_id}/devices/{device_id}/up`.  Here we user `+` to subscribe all devices under application `app01`. If you only want to subscribe one device, you can change `+` to the id of specific device.
-
-![image-20220617162041244](assets/image-20220617162041244.png)
-
-
-### 3.4 Deploy
-
-If all has been done correctly, after you click Deploy button, you should be able to find status of mqtt client is `connected`:
-
-![image-20220617161646234](assets/image-20220617161646234.png)
-
-and your 
-
-
-## 4. Data visualization in Grafana
-
-Now, the temperature and humidity data is monitoring by the end-devices, and the data is upload to the TTS and then saved to the influxdb databases. Now we are going to visulize the data.
-
-Open Grafana's web interface and then create a new dasbboard:
-
-![grafana-data](assets/grafana-data.png)
-
-the "measurement" will be something like "eui-xxxxxxxx", and you can **Select** either/both "temperature_1" or "relatively_humidity_2" to display. If you want to display temperature and relatively_humidity on the same panel, you can create another query. The final result should be somthing like the following graph:
-
-![image-20220622200104739](assets/grafana-panel.png)
-
-
-## 5. License
+## 4. License
 
 This project is licensed under MIT license.
