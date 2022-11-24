@@ -37,7 +37,9 @@ port = 1883
 # mqtt username
 mqtt_username = 'app01'
 # mqtt password
-mqtt_password = 'NNSXS.EK55IOVEIICQJHBP45YLOGAVK5K2DIQYXUGLLPQ.ZZ37HIB7HRTEBQ3LUATIFR3UGFOEVJ3RALZQ4NYAS4XY5A2ZU4HQ'  #change this to you new api key, this key is generated in TTS's MQTT integration page
+# mqtt_password = 'NNSXS.LT4GXGONL5Z5PMFD7TSJKM3Q3KP3IIM7SU3ZLLA.4MIC6FOVVNG4WTPFCGX4RBE4CTEM4GOICGFTLLIFVWMQKDQYDSVA'  #change this to you new api key, this key is generated in TTS's MQTT integration page
+with open('mqtt_config', 'r') as f:
+    mqtt_password = str(f.readlines()[0]).strip()
 # mqtt subscribe topic and publish topic
 # should be something like v3/{application_id}/devices/{device_id}/up
 sub_topic = 'v3/app01/devices/+/up'
