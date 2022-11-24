@@ -117,6 +117,15 @@ now you should be able to see the converted live-data:
 We create a python demo script that can read the sensor data from MQTT broker and then send it out via BACnet. To do this, you only need to run the following command in the demo directory.
 
 ```
+echo "<MQTT-key-generated-in-section-2.2>" > mqtt_config
+```
+for example, it should look like this:
+
+![config API key](/assets/config_api_key.png)
+
+and then start the **BACnet-out.py** script:
+
+```
 rak@rakpios:lorawan-in-bacnet-out $ ./BACnet-out.py 
 Connected to MQTT Broker!
 A sample BACnet application is created...
