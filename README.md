@@ -1,6 +1,6 @@
 # Standalone LoraWAN-in-BACnet-out Gateway
 
-[TOC]
+[English](https://github.com/Sheng2216/lorawan-in-bacnet-out/blob/main/README.md)|[中文简体](https://github.com/Sheng2216/lorawan-in-bacnet-out/blob/main/%E4%B8%AD%E6%96%87%E7%89%88README.md)
 
 ## 1. Introduction
 
