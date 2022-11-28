@@ -1,5 +1,5 @@
 # 在一台独立网关上部署LoRaWAN-in-BACnet-out 服务
-
+[English](https://github.com/Sheng2216/lorawan-in-bacnet-out/blob/main/README.md)|[中文简体](https://github.com/Sheng2216/lorawan-in-bacnet-out/blob/main/%E4%B8%AD%E6%96%87%E7%89%88README.md)
 ## 1. 简介
 
 文本介绍了如何在一台WisGate Connect上部署一个完整的LoRaWAN服务以及一个简单的LoRaWAN-in-BACnet-out示例。节点部分可采用RAKWireless 的Wisblock系列节点，或RAKWireless Senosrhub 节点，或者是第三方LoRaWAN节点。本示例中的LoRaWAN服务是基于UDP packet forwarder和本地The Things Stack网络服务器。所有节点收集到的环境数据（温度、湿度等）将通过LoRaWAN传到WisGate Connect网关中，并在网关内部实现从LoRaWAN转到MQTT，再转换成BACnet IP的整个过程。
