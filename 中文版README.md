@@ -62,7 +62,8 @@ The next step is to run ./BACnet-out.py
 
 在登陆TTS后你需要做的第一步是创建一个网关。点击 “Go to gateways” 就可以创建一个网关。
 
-![](assets\2022-11-28-16-30-21-image.png)
+![](assets/2022-11-28-16-30-21-image.png)
+
 
 在Gateway EUI中填入我们在1.2章节中获取的EUI即可
 
