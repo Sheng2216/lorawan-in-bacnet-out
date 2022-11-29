@@ -154,7 +154,7 @@ function decodeUplink(input) {
 
     return {
         data: {
-            humidity_2: decoded.humidity_2,
+            relative_humidity_2: decoded.humidity_2,
             temperature_1: decoded.temperature_1,
         },
     };
