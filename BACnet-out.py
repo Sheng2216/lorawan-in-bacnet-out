@@ -34,7 +34,7 @@ RANDOM_OBJECT_COUNT = 2
 broker = 'localhost'  # change this to your new host IP if the broker is deployed somewhere else
 # mqtt server port
 port = 1883
-# mqtt username
+# mqtt username, if you changed the application name in TTS, please change the mqtt_username variable
 mqtt_username = 'app01'
 # mqtt password
 # mqtt_password = 'NNSXS.LT4GXGONL5Z5PMFD7TSJKM3Q3KP3IIM7SU3ZLLA.4MIC6FOVVNG4WTPFCGX4RBE4CTEM4GOICGFTLLIFVWMQKDQYDSVA'  #change this to you new api key, this key is generated in TTS's MQTT integration page
@@ -42,7 +42,8 @@ with open('mqtt_config', 'r') as f:
     mqtt_password = str(f.readlines()[0]).strip()
 # mqtt subscribe topic and publish topic
 # should be something like v3/{application_id}/devices/{device_id}/up
-sub_topic = 'v3/app01/devices/+/up'
+#sub_topic = 'v3/app01/devices/+/up'
+sub_topic = 'v3/'+mqtt_username+'/devices/+/up'
 temperature = None
 
 
