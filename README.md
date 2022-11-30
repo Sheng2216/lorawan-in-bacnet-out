@@ -204,7 +204,7 @@ It will read temperature inputs from LoRaWAN nodes via MQTT, and then send it ou
 
 ## 4. 数据可视化
 
-如果您需要一个数据可视化界面来实时展示传感器数据，请参照这篇[文档](https://github.com/Sheng2216/lorawan-in-bacnet-out/blob/main/Data-Visualizations-via-Datcake.md)。遵循这篇文档，您将可以轻松地使用网关内置TTS提供的Webhook来集成Datacake。您将可以在电脑端、移动端等多个平台观察到最新的环境检测数据图标，如下所示：
+如果您需要一个数据可视化界面来实时展示传感器数据，请参照这篇[文档](https://github.com/Sheng2216/lorawan-in-bacnet-out/blob/main/Data-Visualizations-via-Datcake.md)。遵循这篇文档，您将可以轻松地使用网关内置TTS提供的Webhook来集成Datacake。您将可以在电脑端、移动端等多个平台观察到最新的环境检测数据和图表，如下所示：
 
 ![](assets/image-20220922193041779.png)
 
