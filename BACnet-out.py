@@ -140,8 +140,7 @@ def on_message(client, userdata, msg):
 def run_mqtt():
     client = connect_mqtt()
     subscribe(client)
-
-    client.loop_stop()
+    client.loop_start()
 
 
 def BACnet_application():
