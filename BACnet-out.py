@@ -1,28 +1,26 @@
 #!/usr/bin/env python3
 
-"""
-This sample application shows how to extend one of the basic objects, an Analog
-Value Object in this case, to provide a present value. This type of code is used
-when the application is providing a BACnet interface to a collection of data.
-It assumes that almost all of the default behaviour of a BACpypes application is
-sufficient.
-"""
-
 import paho.mqtt.client as mqtt_client
 import json
 import os
+from time import sleep
+from sys import exit
 
 from bacpypes.debugging import bacpypes_debugging, ModuleLogger
 from bacpypes.consolelogging import ConfigArgumentParser
 
-from bacpypes.core import run
-
+from BAC0.core.devices.local.object import ObjectFactory
+from bacpypes.basetypes import DeviceObjectPropertyReference, DailySchedule, TimeValue
+from bacpypes.constructeddata import ArrayOf
+from bacpypes.object import ScheduleObject
 from bacpypes.primitivedata import Real
-from bacpypes.object import AnalogValueObject, Property, register_object_type
-from bacpypes.errors import ExecutionError
-
-from bacpypes.app import BIPSimpleApplication
-from bacpypes.local.device import LocalDeviceObject
+from BAC0 import lite
+from BAC0.core.devices.local.models import (
+    analog_input,
+    analog_output,
+    binary_output,
+    binary_input,
+)
 
 # some debugging
 _debug = 0
@@ -31,7 +29,7 @@ _log = ModuleLogger(globals())
 # settings
 RANDOM_OBJECT_COUNT = 2
 # mqtt server IP
-# change this to your new host IP if the broker is deployed somewhere else
+# change this to your new host IP unless the broker is deployed somewhere else
 broker = 'localhost'
 # mqtt server port
 port = 1883
@@ -43,133 +41,23 @@ with open('mqtt_config', 'r') as f:
     mqtt_password = str(f.readlines()[0]).strip()
 # mqtt subscribe topic and publish topic
 # should be something like v3/{application_id}/devices/{device_id}/up
-#sub_topic = 'v3/test/devices/up'
-sub_topic = 'v3/'+mqtt_username+'/devices/+/up'
-temperature = None
-humidity = None
+sub_topic = 'v3/' + mqtt_username + '/devices/+/up'
 
+device = None
 
-#
-#   TempSensorValueProperty
-#
-
-class TempSensorValueProperty(Property):
-
-    def __init__(self, identifier):
-        if _debug:
-            TempSensorValueProperty._debug("__init__ %r", identifier)
-        Property.__init__(self, identifier, Real, default=0.0,
-                          optional=True, mutable=False)
-
-    def ReadProperty(self, obj, arrayIndex=None):
-        if _debug:
-            TempSensorValueProperty._debug(
-                "ReadProperty %r arrayIndex=%r", obj, arrayIndex)
-        # access an array
-        if arrayIndex is not None:
-            raise ExecutionError(errorClass='property',
-                                 errorCode='propertyIsNotAnArray')
-        # return sensor readings
-        value = temperature
-        print("Sending temperature reading:" +
-              str(value) + "°C out via BACnet IP")
-        if _debug:
-            TempSensorValueProperty._debug("    - value: %r", value)
-        return value
-
-    def WriteProperty(self, obj, value, arrayIndex=None, priority=None, direct=False):
-        if _debug:
-            TempSensorValueProperty._debug("WriteProperty %r %r arrayIndex=%r priority=%r direct=%r", obj, value,
-                                       arrayIndex, priority, direct)
-        raise ExecutionError(errorClass='property',
-                             errorCode='writeAccessDenied')
-
-
-bacpypes_debugging(TempSensorValueProperty)
-
-#
-#   Random Value Object Type
-#
-
-
-class TempSensorAnalogValueObject(AnalogValueObject):
-    properties = [
-        TempSensorValueProperty('presentValue'),
-    ]
-
-    def __init__(self, **kwargs):
-        if _debug:
-            TempSensorAnalogValueObject._debug("__init__ %r", kwargs)
-        AnalogValueObject.__init__(self, **kwargs)
-
-
-bacpypes_debugging(TempSensorAnalogValueObject)
-register_object_type(TempSensorAnalogValueObject)
-
-
-#
-#   HumiSensorValueProperty
-#
-
-class HumiSensorValueProperty(Property):
-
-    def __init__(self, identifier):
-        if _debug:
-            HumiSensorValueProperty._debug("__init__ %r", identifier)
-        Property.__init__(self, identifier, Real, default=0.0,
-                          optional=True, mutable=False)
-
-    def ReadProperty(self, obj, arrayIndex=None):
-        if _debug:
-            HumiSensorValueProperty._debug(
-                "ReadProperty %r arrayIndex=%r", obj, arrayIndex)
-        # access an array
-        if arrayIndex is not None:
-            raise ExecutionError(errorClass='property',
-                                 errorCode='propertyIsNotAnArray')
-        # return sensor readings
-        value = humidity
-        print("Sending Humidity reading:" + str(value) + "% out via BACnet IP")
-        if _debug:
-            HumiSensorValueProperty._debug("    - value: %r", value)
-        return value
-
-    def WriteProperty(self, obj, value, arrayIndex=None, priority=None, direct=False):
-        if _debug:
-            HumiSensorValueProperty._debug("WriteProperty %r %r arrayIndex=%r priority=%r direct=%r", obj, value,
-                                           arrayIndex, priority, direct)
-        raise ExecutionError(errorClass='property',
-                             errorCode='writeAccessDenied')
-
-
-bacpypes_debugging(HumiSensorValueProperty)
-
-#
-#   Random Value Object Type
-#
-
-
-class HumiSensorAnalogValueObject(AnalogValueObject):
-    properties = [
-        HumiSensorValueProperty('presentValue'),
-    ]
-
-    def __init__(self, **kwargs):
-        if _debug:
-            HumiSensorAnalogValueObject._debug("__init__ %r", kwargs)
-        AnalogValueObject.__init__(self, **kwargs)
-
-
-bacpypes_debugging(HumiSensorAnalogValueObject)
-register_object_type(HumiSensorAnalogValueObject)
+# Basic configuration for the BACnet device
+fake_bac0_obj = "WisGate Connect"
+# fake_device_id = 999
+# fake_firmware_revision = "0.1.0"
+# fake_max_apdu_length = "2048"
+# fake_max_segments = "2048"
+# fake_bbmd_ttl = 10
+fake_model_name = "RAK7391"
+fake_vendor_id = 999
+fake_vendor_name = "RAKWireless"
 
 
 def get_IP():
-    # print("The keys and values of all environment variables:")
-    # for key in os.environ:
-    #     print(key, '=>', os.environ[key])
-
-    # Print the value of the particular environment variable
     print("The value of HOME is: ", os.environ['UDP_SERVER_HOST'])
 
 
@@ -188,13 +76,6 @@ def connect_mqtt() -> mqtt_client:
 
 
 def subscribe(client: mqtt_client):
-    # def on_message(client, userdata, msg):
-    #     # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
-    #     json_data = json.loads(msg.payload)
-    #     relative_humidity = json_data["uplink_message"]["decoded_payload"]["relative_humidity_2"]
-    #     global temperature
-    #     temperature = json_data["uplink_message"]["decoded_payload"]["temperature_1"]
-    #     print(temperature)
     client.subscribe(sub_topic)
     client.on_message = on_message
 
@@ -202,10 +83,10 @@ def subscribe(client: mqtt_client):
 def on_message(client, userdata, msg):
     # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
     json_data = json.loads(msg.payload)
-    global temperature, humidity
     temperature = json_data["uplink_message"]["decoded_payload"]["temperature_1"]
     humidity = json_data["uplink_message"]["decoded_payload"]["relative_humidity_2"]
-    print(temperature, humidity)
+    device["Temperature-1"].presentValue = temperature
+    device["Humidity-2"].presentValue = humidity
 
 
 def run_mqtt():
@@ -223,35 +104,37 @@ def BACnet_application():
     if _debug:
         _log.debug("    - args: %r", args)
 
-    # make a device object
-    this_device = LocalDeviceObject(
-        objectName=args.ini.objectname,
-        objectIdentifier=('device', int(args.ini.objectidentifier)),
-        maxApduLengthAccepted=int(args.ini.maxapdulengthaccepted),
-        segmentationSupported=args.ini.segmentationsupported,
-        vendorIdentifier=int(args.ini.vendoridentifier),
+    # Define device objects
+    _new_objects = analog_input(
+        instance=1,
+        name="Temperature-1",
+        properties={"units": "degreesCelsius"},
+        description="SHTC3 sensor temperature",
+        presentValue=0,
+    )
+    analog_input(
+        instance=2,
+        name="Humidity-2",
+        properties={"units": "percent"},
+        description="SHTC3 sensor humidity",
+        presentValue=0,
     )
 
-    # make a sample application
-    this_application = BIPSimpleApplication(this_device, args.ini.address)
-    print("A sample BACnet application is created...")
+    global device
+    device = lite(ip=args.ini.address, port=47808,
+                  deviceId=int(args.ini.objectidentifier),
+                  modelName=fake_model_name,
+                  vendorId=fake_vendor_id,
+                  vendorName=fake_vendor_name,
+                  localObjName=fake_bac0_obj)
 
-    # make some input objects
-    ravoTemp = TempSensorAnalogValueObject(objectIdentifier=(
-        'analogValue', 1), objectName='Temperature-%d' % (1,), )
-    ravoHumi = HumiSensorAnalogValueObject(objectIdentifier=(
-        'analogValue', 2), objectName='Humidity-%d' % (1,), )
-    print("It will read temperature inputs and humidity inputs from LoRaWAN nodes via MQTT, and then send it out via BACnet IP...")
-    _log.debug("    - ravo: %r", ravoTemp)
-    _log.debug("    - ravo: %r", ravoHumi)
-    this_application.add_object(ravoTemp)
-    this_application.add_object(ravoHumi)
+    _new_objects.add_objects_to_application(device)
 
-    # make sure they are all there
-    _log.debug("    - object list: %r", this_device.objectList)
-    _log.debug("running")
-    run()
-    _log.debug("fini")
+    if _debug:
+        _log.debug("Simulation started")
+
+    while True:
+        sleep(1)
 
 
 def main():
